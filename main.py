@@ -124,7 +124,7 @@ def createManifest(ents, path):
         file.write(json.dumps(ents, indent=4, sort_keys=True))
 
 
-
+print("hi im running")
 path = os.path.abspath("d2") # path to download folder
 options = Options()
 options.add_experimental_option("prefs", {
