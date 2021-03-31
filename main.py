@@ -9,6 +9,9 @@ import os
 import json
 import re
 import logging
+import shutil
+from time import sleep
+import sys
 
 def waitForLoad(driver):
     cir_path = r'/html/body/app-root/html/body/div/main/app-search/div/div'
@@ -42,6 +45,7 @@ def getEnts(driver):
             flink = felt.get_attribute('href')
             fid = flink.split("=")[1]
             fname = felt.text
+            form = fname.split(".")[1]
 
             ftype = elt.find_element_by_xpath(r'./td[7]/span').text
             ftypeSplit = ftype.split(" | ")
@@ -62,6 +66,7 @@ def getEnts(driver):
                         "link":flink, 
                         "fname":fname, 
                         'name':name, 
+                        'format':form,
                         'desc':desc, 
                         'type':{
                             'major':ftypeMajor,
@@ -83,22 +88,30 @@ def getEnts(driver):
 
 def downloadEnts(ents, path):
     #ents 0: fname, 1: fdate, 2: fid, 3: flink
+    count = 0
     for ent in ents:
-        try: reply=get(r'https://elibrary.ferc.gov/eLibraryWebAPI/api/File/DownloadFileNetFile/' + ent[2], stream=True)
+        try: reply=get(r'https://elibrary.ferc.gov/eLibraryWebAPI/api/File/DownloadFileNetFile/' + ent, stream=True)
         except: print("Couldn't get file", ent)
-        with open(os.path.join(path, ents[ent]['fname']), 'wb') as file:
-            for chunk in reply.iter_content(chunk_size=1024): 
-                if chunk:
-                    file.write(chunk)
+        # reply.encoding = 'utf-8'
+        print(ents[ent]['fname'], reply.encoding)
+        fname = (" ("+ent+").").join(ents[ent]['fname'].split("."))
+        with open(os.path.join(path, fname), 'wb') as file:
+            val = file.write(reply.content)
+        if val == 0: print(reply.headers)
+        count += 1
+        if count%20 == 0: sleep(10)
             
-def organizeFiles(path):
-    # with open(os.path.join(path,"manifest.json"),'r') as file: dic = json.loads(file)
+def organizeFiles(path, date=False):
+    with open(os.path.join(path,"manifest.json"),'r') as file: dic = json.load(file)
     for file in os.listdir(path):
-
         srcpath = os.path.join(path,file)
         if os.path.isdir(srcpath) or file == "manifest.json": continue
-        newfolder = os.path.join(path,file.split(".")[1].lower())
-        newpath = os.path.join(newfolder,file)
+
+        fid = re.search(r'\((.*)\)\.', file).group(1)
+
+        if not date: newfolder = os.path.join(path,file.split(".")[1].lower())
+        if date: newfolder = os.path.join(path,dic[fid]['fdate'].replace("/","."), dic[fid]['format'])
+        newpath = os.path.join(newfolder,file)  
 
         if not os.path.exists(newfolder):
             os.makedirs(newfolder)
@@ -111,7 +124,8 @@ def createManifest(ents, path):
         file.write(json.dumps(ents, indent=4, sort_keys=True))
 
 
-path = os.path.abspath("download") # path to download folder
+
+path = os.path.abspath("d2") # path to download folder
 options = Options()
 options.add_experimental_option("prefs", {
   "download.default_directory": path,
@@ -122,15 +136,15 @@ options.add_experimental_option("prefs", {
 driver = webdriver.Chrome(chrome_options=options)
 driver.get("https://elibrary.ferc.gov/eLibrary/search")
 driver.find_element_by_xpath(r'//*[@id="mat-input-6"]').send_keys("P-15056-000")
-# driver.find_element_by_xpath(r'//*[@id="main"]/app-search/section[2]/div/div/div/div/form/fieldset/div/div[3]/fieldset/div/mat-form-field[2]').click()
-# driver.find_element_by_xpath(r'//*[@id="mat-option-17"]').click()
+driver.find_element_by_xpath(r'//*[@id="main"]/app-search/section[2]/div/div/div/div/form/fieldset/div/div[3]/fieldset/div/mat-form-field[2]').click()
+driver.find_element_by_xpath(r'//*[@id="mat-option-17"]').click()
 driver.find_element_by_xpath(r'//*[@id="submit"]').click()
 waitForLoad(driver)
 
 ents = getEnts(driver)
 downloadEnts(ents, path)
-organizeFiles(path)
 createManifest(ents, path)
+organizeFiles(path, date=True)
 
 
 driver.quit()
