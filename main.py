@@ -124,15 +124,15 @@ def createManifest(ents, path):
         file.write(json.dumps(ents, indent=4, sort_keys=True))
 
 
+
 print("hi im running")
 path = os.path.abspath("d2") # path to download folder
 options = Options()
-options.add_experimental_option("prefs", {
-  "download.default_directory": path,
-  "download.prompt_for_download": False,
-  "download.directory_upgrade": True,
-  "safebrowsing.enabled": True
-})
+
+try: sys.argv()[1]
+except: pass
+else: options.add_argument('--headless')
+
 driver = webdriver.Chrome(chrome_options=options)
 driver.get("https://elibrary.ferc.gov/eLibrary/search")
 driver.find_element_by_xpath(r'//*[@id="mat-input-6"]').send_keys("P-15056-000")
@@ -148,3 +148,4 @@ organizeFiles(path, date=True)
 
 
 driver.quit()
+print("finished")
