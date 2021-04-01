@@ -11,7 +11,7 @@ import re
 import logging
 import shutil
 from time import sleep
-import sys
+import argparse, sys
 
 def waitForLoad(driver):
     cir_path = r'/html/body/app-root/html/body/div/main/app-search/div/div'
@@ -123,13 +123,17 @@ def createManifest(ents, path):
     with open(os.path.join(path,"manifest.json"), 'w') as file: 
         file.write(json.dumps(ents, indent=4, sort_keys=True))
 
-
+parser=argparse.ArgumentParser()
+parser.add_argument('--headless', default=False, type=bool)
+args=parser.parse_args()
+print(args)
 
 print("hi im running")
 path = os.path.abspath("d2") # path to download folder
 options = Options()
 
-options.add_argument('--headless')
+if args.headless: options.add_argument('--headless')
+# 
 
 driver = webdriver.Chrome(chrome_options=options)
 driver.get("https://elibrary.ferc.gov/eLibrary/search")
