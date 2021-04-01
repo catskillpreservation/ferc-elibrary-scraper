@@ -125,11 +125,15 @@ def createManifest(ents, path):
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--headless', default=False, type=bool)
+parser.add_argument('--rootDir', default=os.getcwd(), type=str)
+
 args=parser.parse_args()
 print(args)
 
 print("hi im running")
-path = os.path.abspath("d2") # path to download folder
+path = os.path.abspath("downloads") # path to download folder
+if not os.path.exists(path):
+    os.makedirs(path)
 options = Options()
 
 if args.headless: options.add_argument('--headless')
