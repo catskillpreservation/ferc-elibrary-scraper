@@ -43,8 +43,9 @@ def getEnts(driver):
             
             felt = elt.find_element_by_xpath(r'./td[9]/div/a')
             flink = felt.get_attribute('href')
-            fid = flink.split("=")[1]
+            fdid = flink.split("=")[1]
             fname = felt.text
+            fid = fname.split(".")[0]
             form = fname.split(".")[1]
 
             ftype = elt.find_element_by_xpath(r'./td[7]/span').text
@@ -60,6 +61,7 @@ def getEnts(driver):
                 name = None
 
             rval[fid]= {"catagory":catagory, 
+                        "downloadid":fdid,
                         "accession":accession, 
                         "fdate":fdate, 
                         "ddate":ddate, 
@@ -88,26 +90,28 @@ def getEnts(driver):
 
 def downloadEnts(ents, path):
     #ents 0: fname, 1: fdate, 2: fid, 3: flink
+    path = os.path.join(path,"temp")
+    os.mkdir(path)
     count = 0
     for ent in ents:
         try: reply=get(r'https://elibrary.ferc.gov/eLibraryWebAPI/api/File/DownloadFileNetFile/' + ent, stream=True)
         except: print("Couldn't get file", ent)
         # reply.encoding = 'utf-8'
-        print(ents[ent]['fname'], reply.encoding)
-        fname = (" ("+ent+").").join(ents[ent]['fname'].split("."))
+        fname = ent + "." +ents[ent]['format']
         with open(os.path.join(path, fname), 'wb') as file:
             val = file.write(reply.content)
-        if val == 0: print(reply.headers)
+        if val == 0: print("Empty file",)
         count += 1
         if count%20 == 0: sleep(10)
             
 def organizeFiles(path, date=False):
     with open(os.path.join(path,"manifest.json"),'r') as file: dic = json.load(file)
-    for file in os.listdir(path):
-        srcpath = os.path.join(path,file)
+    for file in os.listdir(os.path.join(path,"temp")):
+        srcpath = os.path.join(path,"temp",file)
         if os.path.isdir(srcpath) or file == "manifest.json": continue
 
-        fid = re.search(r'\((.*)\)\.', file).group(1)
+        fid = file.split(".")[0]
+        if not fid in dic: continue
 
         if not date: newfolder = os.path.join(path,file.split(".")[1].lower())
         if date: newfolder = os.path.join(path,dic[fid]['fdate'].replace("/","."), dic[fid]['format'])
@@ -118,6 +122,7 @@ def organizeFiles(path, date=False):
         
         if os.path.exists(newpath): os.remove(newpath)
         os.rename(srcpath, newpath)
+    os.removedirs(os.path.join(path,"temp"))
 
 def createManifest(ents, path):
     with open(os.path.join(path,"manifest.json"), 'w') as file: 
