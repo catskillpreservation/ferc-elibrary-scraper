@@ -129,9 +129,7 @@ print("hi im running")
 path = os.path.abspath("d2") # path to download folder
 options = Options()
 
-try: sys.argv()[1]
-except: pass
-else: options.add_argument('--headless')
+options.add_argument('--headless')
 
 driver = webdriver.Chrome(chrome_options=options)
 driver.get("https://elibrary.ferc.gov/eLibrary/search")
