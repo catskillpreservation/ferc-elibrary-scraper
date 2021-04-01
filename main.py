@@ -60,8 +60,7 @@ def getEnts(driver):
             else: 
                 name = None
 
-            rval[fid]= {"catagory":catagory, 
-                        "downloadid":fdid,
+            rval[fdid]= {"category":catagory, 
                         "accession":accession, 
                         "fdate":fdate, 
                         "ddate":ddate, 
@@ -89,33 +88,41 @@ def getEnts(driver):
     return rval
 
 def downloadEnts(ents, path):
-    #ents 0: fname, 1: fdate, 2: fid, 3: flink
+    #ents 0: fname, 1: fdate, 2: fid, 3: flink  
     path = os.path.join(path,"temp")
     os.mkdir(path)
     count = 0
     for ent in ents:
-        try: reply=get(r'https://elibrary.ferc.gov/eLibraryWebAPI/api/File/DownloadFileNetFile/' + ent, stream=True)
-        except: print("Couldn't get file", ent)
-        # reply.encoding = 'utf-8'
-        fname = ent + "." +ents[ent]['format']
-        with open(os.path.join(path, fname), 'wb') as file:
+        downloadEnt(ent, path, ents[ent]['format'])
+
+def downloadEnt(ent, path, form, count=0):
+    try: reply=get(r'https://elibrary.ferc.gov/eLibraryWebAPI/api/File/DownloadFileNetFile/' + ent, stream=True)
+    except: print("Couldn't get file", ent)
+    fname = ent + "." + form
+    with open(os.path.join(path, fname), 'wb') as file:
             val = file.write(reply.content)
-        if val == 0: print("Empty file",)
-        count += 1
-        if count%20 == 0: sleep(10)
-            
+    if val == 0:
+        if count == 10:
+            print("tried 10 times but couldnt get file breaking")
+            return
+        print("empty file trying again in 10 seconds", ent)
+        sleep(10)
+        downloadEnt(ent, path, form, count+1)
+
 def organizeFiles(path, date=False):
+    
     with open(os.path.join(path,"manifest.json"),'r') as file: dic = json.load(file)
-    for file in os.listdir(os.path.join(path,"temp")):
+    for file in os.listdir(os.path.join(path,"temp\\")):
         srcpath = os.path.join(path,"temp",file)
         if os.path.isdir(srcpath) or file == "manifest.json": continue
 
         fid = file.split(".")[0]
         if not fid in dic: continue
 
-        if not date: newfolder = os.path.join(path,file.split(".")[1].lower())
-        if date: newfolder = os.path.join(path,dic[fid]['fdate'].replace("/","."), dic[fid]['format'])
+        if not date: newfolder = os.path.join(path,dic[fid]['format'].lower())
+        if date: newfolder = os.path.join(path,dic[fid]['fdate'].replace("/","."), dic[fid]['format'].lower())
         newpath = os.path.join(newfolder,file)  
+        print("Moving file", srcpath, "to", newpath)
 
         if not os.path.exists(newfolder):
             os.makedirs(newfolder)
@@ -128,10 +135,30 @@ def createManifest(ents, path):
     with open(os.path.join(path,"manifest.json"), 'w') as file: 
         file.write(json.dumps(ents, indent=4, sort_keys=True))
 
+def splitManifest(path):
+    with open(os.path.join(path,"manifest.json"),'r') as file: main = json.load(file)
+    for fol in os.listdir(path):
+        ids = []
+        fjson = {}
+        fpath = os.path.join(path,fol)
+        if not os.path.isdir(fpath): continue
+
+        for subfol in os.listdir(fpath):
+            if not os.path.isdir(os.path.join(fpath,subfol)): continue
+            for file in os.listdir(os.path.join(fpath,subfol)):
+                ids.append(file.split(".")[0])
+        for fid in ids:
+            fjson[fid] = main[fid]
+        
+        with open(os.path.join(fpath,"manifest.json"),'w') as file: 
+            file.write(json.dumps(fjson, indent=4, sort_keys=True))
+    os.remove(os.path.join(path,"manifest.json"))
+
 parser=argparse.ArgumentParser()
 parser.add_argument('--headless', default=False, type=bool)
 parser.add_argument('--rootDir', default=os.getcwd(), type=str)
 parser.add_argument('--folder', default="downloads", type=str)
+parser.add_argument('--type', default="daily", type=str)
 
 args=parser.parse_args()
 print(args)
@@ -149,7 +176,17 @@ driver = webdriver.Chrome(chrome_options=options)
 driver.get("https://elibrary.ferc.gov/eLibrary/search")
 driver.find_element_by_xpath(r'//*[@id="mat-input-6"]').send_keys("P-15056-000")
 driver.find_element_by_xpath(r'//*[@id="main"]/app-search/section[2]/div/div/div/div/form/fieldset/div/div[3]/fieldset/div/mat-form-field[2]').click()
-driver.find_element_by_xpath(r'//*[@id="mat-option-17"]').click()
+if args.type == 'daily':
+    driver.find_element_by_xpath(r'//*[@id="mat-option-17"]').click()
+if args.type == 'weekly':
+    driver.find_element_by_xpath(r'//*[@id="mat-option-18"]').click()
+if args.type == 'monthly':
+    driver.find_element_by_xpath(r'//*[@id="mat-option-19"]').click()
+if args.type == 'all':
+    driver.find_element_by_xpath(r'//*[@id="mat-option-22"]').click()
+
+
+
 driver.find_element_by_xpath(r'//*[@id="submit"]').click()
 waitForLoad(driver)
 
@@ -157,7 +194,7 @@ ents = getEnts(driver)
 downloadEnts(ents, path)
 createManifest(ents, path)
 organizeFiles(path, date=True)
-
+splitManifest(path)
 
 driver.quit()
 print("finished")
