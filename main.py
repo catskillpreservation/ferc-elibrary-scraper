@@ -89,8 +89,7 @@ def getEnts(driver):
 
 def downloadEnts(ents, path):
     #ents 0: fname, 1: fdate, 2: fid, 3: flink  
-    path = os.path.join(path,"temp")
-    os.mkdir(path)
+    if not os.path.exists(path): os.mkdir(path)
     count = 0
     for ent in ents:
         downloadEnt(ent, path, ents[ent]['format'])
@@ -112,8 +111,8 @@ def downloadEnt(ent, path, form, count=0):
 def organizeFiles(path, date=False):
     
     with open(os.path.join(path,"manifest.json"),'r') as file: dic = json.load(file)
-    for file in os.listdir(os.path.join(path,"temp")):
-        srcpath = os.path.join(path,"temp",file)
+    for file in os.listdir(path):
+        srcpath = os.path.join(path,file)
         if os.path.isdir(srcpath) or file == "manifest.json": continue
 
         fid = file.split(".")[0]
@@ -129,7 +128,6 @@ def organizeFiles(path, date=False):
         
         if os.path.exists(newpath): os.remove(newpath)
         os.rename(srcpath, newpath)
-    os.removedirs(os.path.join(path,"temp"))
 
 def createManifest(ents, path):
     with open(os.path.join(path,"manifest.json"), 'w') as file: 
@@ -154,6 +152,35 @@ def splitManifest(path):
             file.write(json.dumps(fjson, indent=4, sort_keys=True))
     os.remove(os.path.join(path,"manifest.json"))
 
+def joinFiles(tp, path):
+    for fold in os.listdir(tp):
+        srcfold = os.path.join(tp,fold)
+        newfold = os.path.join(path,fold)
+        if os.path.exists(newfold):
+
+            # merge json files
+            with open(os.path.join(srcfold,"manifest.json"),'r') as file: srcjson = json.load(file)
+            with open(os.path.join(newfold,"manifest.json"),'r') as file: newjson = json.load(file)
+            for key in srcjson: newjson[key] = srcjson[key]
+            with open(os.path.join(newfold,"manifest.json"),'w') as file: file.write(json.dumps(newjson, indent=4, sort_keys=True))
+
+            # merge and move files
+            for subfold in os.listdir(srcfold): # txt/pdf
+                if not os.path.isdir(os.path.join(srcfold,subfold)): continue
+                subpath = os.path.join(srcfold,subfold)
+                for file in os.listdir(subpath):
+                    srcfpath = os.path.join(subpath,file)
+                    newfpath = os.path.join(newfold,subfold,file)
+                    if os.path.exists(newfpath): os.remove(newfpath)
+                    os.rename(srcfpath, newfpath)
+
+                
+
+        else: # if we're getting a new day
+            shutil.copytree(srcfold, newfold)
+            shutil.rmtree(srcfold)
+    shutil.rmtree(tp)
+
 parser=argparse.ArgumentParser()
 parser.add_argument('--headless', default=False, type=bool)
 parser.add_argument('--rootDir', default=os.getcwd(), type=str)
@@ -161,9 +188,7 @@ parser.add_argument('--folder', default="downloads", type=str)
 parser.add_argument('--type', default="daily", type=str)
 parser.add_argument('--folderDelimit', default="\\", type=str)
 
-
 args=parser.parse_args()
-print(args)
 
 print("hi im running")
 path = os.path.abspath(args.folder) # path to download folder
@@ -193,10 +218,12 @@ driver.find_element_by_xpath(r'//*[@id="submit"]').click()
 waitForLoad(driver)
 
 ents = getEnts(driver)
-downloadEnts(ents, path)
-createManifest(ents, path)
-organizeFiles(path, date=True)
-splitManifest(path)
+temppath = os.path.join(path,"temp")
+downloadEnts(ents, temppath)
+createManifest(ents, temppath)
+organizeFiles(temppath, date=True)
+splitManifest(temppath)
+joinFiles(temppath,path)
 
 print("finished")
 driver.quit()
