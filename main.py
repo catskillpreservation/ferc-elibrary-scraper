@@ -173,13 +173,14 @@ def joinFiles(tp, path):
             # merge and move files
             for subfold in os.listdir(srcfold): # txt/pdf
                 if not os.path.isdir(os.path.join(srcfold,subfold)): continue
+                if not os.path.exists(os.path.join(newfold,subfold)): os.makedirs(os.path.join(newfold,subfold))
                 subpath = os.path.join(srcfold,subfold)
                 for file in os.listdir(subpath):
                     srcfpath = os.path.join(subpath,file)
                     if not os.path.exists(srcfpath): continue
                     newfpath = os.path.join(newfold,subfold,file)
                     if os.path.exists(newfpath): os.remove(newfpath)
-                    os.rename(srcfpath, newfpath)
+                    shutil.move(srcfpath, newfpath)
 
                 
 
