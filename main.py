@@ -102,7 +102,7 @@ def downloadEnt(ent, path, form, count=0):
     with open(os.path.join(path, fname), 'wb') as file:
             val = file.write(reply.content)
     if val == 0:
-        if count == 10:
+        if count == 3:
             print("tried 10 times but couldnt get file breaking")
             return
         print("empty file trying again in 10 seconds", ent)
@@ -112,7 +112,7 @@ def downloadEnt(ent, path, form, count=0):
 def organizeFiles(path, date=False):
     
     with open(os.path.join(path,"manifest.json"),'r') as file: dic = json.load(file)
-    for file in os.listdir(os.path.join(path,"temp\\")):
+    for file in os.listdir(os.path.join(path,"temp")):
         srcpath = os.path.join(path,"temp",file)
         if os.path.isdir(srcpath) or file == "manifest.json": continue
 
@@ -159,6 +159,8 @@ parser.add_argument('--headless', default=False, type=bool)
 parser.add_argument('--rootDir', default=os.getcwd(), type=str)
 parser.add_argument('--folder', default="downloads", type=str)
 parser.add_argument('--type', default="daily", type=str)
+parser.add_argument('--folderDelimit', default="\\", type=str)
+
 
 args=parser.parse_args()
 print(args)
@@ -170,7 +172,7 @@ if not os.path.exists(path):
 options = Options()
 
 if args.headless: options.add_argument('--headless')
-# 
+
 
 driver = webdriver.Chrome(chrome_options=options)
 driver.get("https://elibrary.ferc.gov/eLibrary/search")
@@ -196,5 +198,5 @@ createManifest(ents, path)
 organizeFiles(path, date=True)
 splitManifest(path)
 
-driver.quit()
 print("finished")
+driver.quit()
