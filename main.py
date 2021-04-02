@@ -109,11 +109,20 @@ def downloadEnt(ent, path, form, count=0):
             val = file.write(reply.content)
     if val == 0:
         if count == 3:
-            logging.info("Tried 10 times but couldnt get file breaking")
+            logging.info("Tried 3 times but couldnt get file breaking")
             return
         logging.info("Empty file trying again in 10 seconds fid: %s", ent)
         sleep(10)
         downloadEnt(ent, path, form, count+1)
+    try: open(os.path.join(path,fname),"r").close()
+    except:
+        if count == 3:
+            logging.info("Tried 3 times but file still corrupt")
+            return
+        logging.info("File is corrupt redownloading in 10 seconds fid: %s",ent)
+        sleep(10)
+        downloadEnt(ent, path, form, count+1)
+        
 
 def organizeFiles(path, date=False):
     logging.info("Organizing files")
