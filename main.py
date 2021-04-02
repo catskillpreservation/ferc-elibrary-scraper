@@ -176,6 +176,7 @@ def joinFiles(tp, path):
                 subpath = os.path.join(srcfold,subfold)
                 for file in os.listdir(subpath):
                     srcfpath = os.path.join(subpath,file)
+                    if not os.path.exists(srcfpath): continue
                     newfpath = os.path.join(newfold,subfold,file)
                     if os.path.exists(newfpath): os.remove(newfpath)
                     os.rename(srcfpath, newfpath)
