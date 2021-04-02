@@ -1,3 +1,10 @@
+import logging
+global log
+import os
+
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"), format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+logging.info("Starting program")
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -5,7 +12,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from requests import get
 from selenium.common.exceptions import NoSuchElementException
-import os
 import json
 import re
 import logging
@@ -20,7 +26,7 @@ def waitForLoad(driver):
     return True
 
 def getEnts(driver):
-
+    logging.info("Getting elements from page")
     cpn_path = r'/html/body/app-root/html/body/div/main/app-search/section[1]/div[3]/div/div/div/table/caption/div/mat-toolbar/div[1]/mat-form-field/div/div[1]/div/mat-select/div/div[1]'
     maxpn_path = r'/html/body/app-root/html/body/div/main/app-search/section[1]/div[3]/div/div/div/table/caption/div/mat-toolbar/div[1]/div[2]'
     
@@ -88,6 +94,7 @@ def getEnts(driver):
     return rval
 
 def downloadEnts(ents, path):
+    logging.info("Downloading elements")
     #ents 0: fname, 1: fdate, 2: fid, 3: flink  
     if not os.path.exists(path): os.mkdir(path)
     count = 0
@@ -96,20 +103,20 @@ def downloadEnts(ents, path):
 
 def downloadEnt(ent, path, form, count=0):
     try: reply=get(r'https://elibrary.ferc.gov/eLibraryWebAPI/api/File/DownloadFileNetFile/' + ent, stream=True)
-    except: print("Couldn't get file", ent)
+    except: logging.info("Couldn't get file %s", ent)
     fname = ent + "." + form
     with open(os.path.join(path, fname), 'wb') as file:
             val = file.write(reply.content)
     if val == 0:
         if count == 3:
-            print("tried 10 times but couldnt get file breaking")
+            logging.info("Tried 10 times but couldnt get file breaking")
             return
-        print("empty file trying again in 10 seconds", ent)
+        logging.info("Empty file trying again in 10 seconds fid: %s", ent)
         sleep(10)
         downloadEnt(ent, path, form, count+1)
 
 def organizeFiles(path, date=False):
-    
+    logging.info("Organizing files")
     with open(os.path.join(path,"manifest.json"),'r') as file: dic = json.load(file)
     for file in os.listdir(path):
         srcpath = os.path.join(path,file)
@@ -121,7 +128,6 @@ def organizeFiles(path, date=False):
         if not date: newfolder = os.path.join(path,dic[fid]['format'].lower())
         if date: newfolder = os.path.join(path,dic[fid]['fdate'].replace("/","."), dic[fid]['format'].lower())
         newpath = os.path.join(newfolder,file)  
-        print("Moving file", srcpath, "to", newpath)
 
         if not os.path.exists(newfolder):
             os.makedirs(newfolder)
@@ -198,7 +204,7 @@ options = Options()
 
 if args.headless: options.add_argument('--headless')
 
-
+logging.info("Starting webdriver")
 driver = webdriver.Chrome(chrome_options=options)
 driver.get("https://elibrary.ferc.gov/eLibrary/search")
 driver.find_element_by_xpath(r'//*[@id="mat-input-6"]').send_keys("P-15056-000")
@@ -212,9 +218,8 @@ if args.type == 'monthly':
 if args.type == 'all':
     driver.find_element_by_xpath(r'//*[@id="mat-option-22"]').click()
 
-
-
 driver.find_element_by_xpath(r'//*[@id="submit"]').click()
+logging.info("Loading SR page")
 waitForLoad(driver)
 
 ents = getEnts(driver)
@@ -225,5 +230,5 @@ organizeFiles(temppath, date=True)
 splitManifest(temppath)
 joinFiles(temppath,path)
 
-print("finished")
+logging.info("Program finished")
 driver.quit()
