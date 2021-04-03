@@ -121,14 +121,15 @@ def downloadEnt(ent, path, form, count=0):
         logging.info("Empty file trying again in 10 seconds fid: %s", ent)
         sleep(10)
         downloadEnt(ent, path, form, count+1)
-    try: open(os.path.join(path,fname),"r").read()
-    except:
-        if count == 3:
-            logging.info("Tried 3 times but file still corrupt")
-            return
-        logging.info("File is corrupt redownloading in 10 seconds fid: %s",ent)
-        sleep(10)
-        downloadEnt(ent, path, form, count+1)
+    if lower(form) == "txt":
+        try: open(os.path.join(path,fname),"r").read()
+        except:
+            if count == 3:
+                logging.info("Tried 3 times but file still corrupt")
+                return
+            logging.info("File is corrupt redownloading in 10 seconds fid: %s",ent)
+            sleep(10)
+            downloadEnt(ent, path, form, count+1)
         
 
 def organizeFiles(path, date=False):
