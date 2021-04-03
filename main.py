@@ -26,6 +26,11 @@ def waitForLoad(driver):
     return True
 
 def getEnts(driver):
+    try: 
+        if driver.find_element_by_xpath(r'//*[@id="noRslt"]/td/div').text == "No data was found matching your criteria. Please click here to change search criteria":
+            return 0
+    except: pass
+
     logging.info("Getting elements from page")
     cpn_path = r'/html/body/app-root/html/body/div/main/app-search/section[1]/div[3]/div/div/div/table/caption/div/mat-toolbar/div[1]/mat-form-field/div/div[1]/div/mat-select/div/div[1]'
     maxpn_path = r'/html/body/app-root/html/body/div/main/app-search/section[1]/div[3]/div/div/div/table/caption/div/mat-toolbar/div[1]/div[2]'
@@ -62,12 +67,12 @@ def getEnts(driver):
             if ftypeMajor == "Comments/Protest":
                 try: name = re.search(r'Comment?s? of (.*) (?:in|under)', desc).group(1)
                 except: 
-                    logging.warn("Malformed description for comment: %s", desc)
+                    logging.warning("Malformed description for comment: %s", desc)
                     name = None
             elif ftypeMajor == "Intervention":
                 try: name = re.search(r'Motion to Intervene of (.*) under', desc).group(1)
                 except: 
-                    logging.warn("Malformed description for motion: %s", desc)
+                    logging.warning("Malformed description for motion: %s", desc)
 
                     name = None
             else: 
@@ -121,7 +126,7 @@ def downloadEnt(ent, path, form, count=0):
         logging.info("Empty file trying again in 10 seconds fid: %s", ent)
         sleep(10)
         downloadEnt(ent, path, form, count+1)
-    if lower(form) == "txt":
+    if form.lower() == "txt":
         try: open(os.path.join(path,fname),"r").read()
         except:
             if count == 3:
@@ -242,6 +247,11 @@ logging.info("Loading SR page")
 waitForLoad(driver)
 
 ents = getEnts(driver)
+if ents == 0:
+    logging.error("Search results are empty, quitting")
+    driver.quit()
+    sys.exit(0)
+
 temppath = os.path.join(path,"temp")
 downloadEnts(ents, temppath)
 createManifest(ents, temppath)
