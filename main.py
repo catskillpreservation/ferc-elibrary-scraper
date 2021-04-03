@@ -60,9 +60,16 @@ def getEnts(driver):
             ftypeMinor = ftypeSplit[1]
             desc = elt.find_element_by_xpath(r'./td[6]/span').text
             if ftypeMajor == "Comments/Protest":
-                name = re.search(r'Comment?s? of (.*) (?:in|under)', desc).group(1)
+                try: name = re.search(r'Comment?s? of (.*) (?:in|under)', desc).group(1)
+                except: 
+                    logging.warn("Malformed description for comment: %s", desc)
+                    name = None
             elif ftypeMajor == "Intervention":
-                name = re.search(r'Motion to Intervene of (.*) under', desc).group(1)
+                try: name = re.search(r'Motion to Intervene of (.*) under', desc).group(1)
+                except: 
+                    logging.warn("Malformed description for motion: %s", desc)
+
+                    name = None
             else: 
                 name = None
 
