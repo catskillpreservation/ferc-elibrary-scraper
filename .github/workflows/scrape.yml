@@ -64,5 +64,5 @@ jobs:
         git config user.name sommea
         git config user.email asommer999@gmail.com
         git add .
-        git commit -m "Automated daily commit"
+        git commit -m "Automated daily commit" || echo "Nothing to commit"
         git push -f origin main
