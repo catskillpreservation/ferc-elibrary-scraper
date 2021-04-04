@@ -13,6 +13,7 @@ print(folder)
 
 for fold in os.listdir(folder):
     sfold = os.path.join(folder,fold,"DOCX")
+    print(sfold)
     if os.path.exists(sfold) and os.path.isdir(sfold):
         for file in os.listdir(sfold):
             if file[-4:].lower() != "docx": continue
