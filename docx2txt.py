@@ -20,4 +20,5 @@ for fold in os.listdir(folder):
             if file.find(".DOCX") != -1: os.rename(fpath, os.path.join(sfold,file.lower()))
             fpath = os.path.join(sfold,file.lower())
             pypandoc.convert_file(fpath, 'plain', outputfile=fpath.replace(".docx",".TXT"))
+            print("Creating", fpath.replace(".docx",".TXT"))
             os.rename(fpath,os.path.join(sfold,file.upper()))
