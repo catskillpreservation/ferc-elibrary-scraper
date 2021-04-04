@@ -8,11 +8,11 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--folder', default="downloads", type=str)
 args=parser.parse_args()
 
-folder = os.path.abspath(args.folder)
+folder = os.path.abspath(args.folder) # ./comments
 print(folder)
 
-for fold in os.listdir(folder):
-    sfold = os.path.join(folder,fold,"DOCX")
+for fold in os.listdir(folder): # ./comments/*
+    sfold = os.path.join(folder,fold,"docx")
     if os.path.exists(sfold) and os.path.isdir(sfold):
         print(sfold)
         for file in os.listdir(sfold):
