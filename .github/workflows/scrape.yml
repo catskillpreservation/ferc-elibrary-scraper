@@ -61,7 +61,9 @@ jobs:
     
     - name: Run docx converter
       run: python docx2txt.py --folder comments
-      
+    - name: tree
+      run: tree .
+    
     - name: Commit files
       run: |
         cd comments
