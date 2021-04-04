@@ -220,7 +220,6 @@ parser.add_argument('--folderDelimit', default="\\", type=str)
 
 args=parser.parse_args()
 
-print("hi im running")
 path = os.path.abspath(args.folder) # path to download folder
 if not os.path.exists(path):
     os.makedirs(path)

@@ -8,7 +8,8 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--folder', default="downloads", type=str)
 args=parser.parse_args()
 
-folder = args.folder
+folder = os.path.abspath(args.folder)
+print(folder)
 
 for fold in os.listdir(folder):
     sfold = os.path.join(folder,fold,"DOCX")
