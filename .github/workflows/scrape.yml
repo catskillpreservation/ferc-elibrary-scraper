@@ -41,7 +41,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install selenium requests pypandoc
+        pip install selenium requests pypandoc img2pdf
         
     - name: Prepare Selenium
       uses: nanasess/setup-chromedriver@master
