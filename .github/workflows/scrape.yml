@@ -58,7 +58,10 @@ jobs:
 
     - name: Run docx converter
       run: python docx2txt.py --folder comments
-    
+
+    - name: Run tif converter
+      run: python tif2pdf.py --folder comments
+      
     - name: Commit files
       run: |
         cd comments
