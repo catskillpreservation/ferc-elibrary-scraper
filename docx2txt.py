@@ -20,7 +20,9 @@ for fold in os.listdir(folder): # ./comments/*
             fpath = os.path.join(sfold,file)
             if file.find(".DOCX") != -1: os.rename(fpath, os.path.join(sfold,file.lower()))
             fpath = os.path.join(sfold,file.lower())
-            a = pypandoc.convert_file(fpath, 'plain', outputfile=fpath.replace(".docx",".TXT"))
-            print(a)
+            try: 
+                a = pypandoc.convert_file(fpath, 'plain', outputfile=fpath.replace(".docx",".TXT"))
+            except:
+                print('cannot convert',fpath)
             print("Creating", fpath.replace(".docx",".TXT"))
             os.rename(fpath,os.path.join(sfold,file.upper()))
